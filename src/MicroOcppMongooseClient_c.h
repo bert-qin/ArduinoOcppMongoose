@@ -12,6 +12,7 @@
 
 #include "mongoose.h"
 #include <MicroOcpp/Core/ConfigurationOptions.h>
+#include <MicroOcpp_c.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,7 +26,8 @@ OCPP_Connection *ocpp_makeConnection(struct mg_mgr *mgr,
         const char *charge_box_id_default,
         const char *auth_key_default,
         const char *CA_cert_default,
-        struct OCPP_FilesystemOpt fsopt);
+        struct OCPP_FilesystemOpt fsopt,
+        ProtocolVersionC *version);
 
 void ocpp_deinitConnection(OCPP_Connection *sock);
 
