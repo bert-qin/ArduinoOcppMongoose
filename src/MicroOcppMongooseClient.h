@@ -51,8 +51,8 @@ private:
     unsigned long last_connection_established {-1UL / 2UL};
     bool connection_closing {false};
     ReceiveTXTcallback receiveTXTcallback = [] (const char *, size_t) {return false;};
-
     ProtocolVersion protocolVersion;
+    const ProtocolVersion * machedProtocolVersion = nullptr;
 
     void reconnect();
 
@@ -115,6 +115,8 @@ public:
     void updateRcvTimer();
     unsigned long getLastRecv(); //get time of last successful receive in millis
     unsigned long getLastConnected(); //get time of last connection establish
+    void setMatchedProtocolVersion(const ProtocolVersion* version){machedProtocolVersion = version;}
+    const ProtocolVersion* getMatchedProtocolVersion(){return machedProtocolVersion;}
 };
 
 }

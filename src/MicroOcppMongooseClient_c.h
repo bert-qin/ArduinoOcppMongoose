@@ -45,6 +45,7 @@ const char *ocpp_getAuthKey(OCPP_Connection *sock);
 const char *ocpp_getCaCert(OCPP_Connection *sock);
 
 bool ocpp_isConnectionOpen(OCPP_Connection *sock);
+const ProtocolVersionC *ocpp_getMatchedProtocolVersion(OCPP_Connection *sock);
 
 #ifdef __cplusplus
 }

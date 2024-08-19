@@ -129,3 +129,12 @@ bool ocpp_isConnectionOpen(OCPP_Connection *sock) {
     auto mgsock = reinterpret_cast<MOcppMongooseClient*>(sock);
     return mgsock->isConnectionOpen();
 }
+
+const ProtocolVersionC * ocpp_getMatchedProtocolVersion(OCPP_Connection *sock) {
+    if (!sock) {
+        MO_DBG_ERR("invalid argument");
+        return nullptr;
+    }
+    auto mgsock = reinterpret_cast<MOcppMongooseClient*>(sock);
+    return reinterpret_cast<const ProtocolVersionC*>(mgsock->getMatchedProtocolVersion());
+}

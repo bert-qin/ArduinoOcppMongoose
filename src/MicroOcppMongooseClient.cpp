@@ -279,7 +279,7 @@ void MOcppMongooseClient::maintainWsConn() {
         this,
         opts,
         url.c_str(),
-        protocolVersion.major == 2 ? "ocpp2.0.1" : "ocpp1.6",
+        protocolVersion.major == 2 ? "ocpp2.0.1" : (protocolVersion.major == 1 ? "ocpp1.6" : "ocpp2.0.1,ocpp1.6"),
         *extra_headers ? extra_headers : nullptr);
 
     if (websocket) {
@@ -294,7 +294,7 @@ void MOcppMongooseClient::maintainWsConn() {
         ws_cb, 
         this, 
         "Sec-WebSocket-Protocol: %s%s%s\r\n",
-                      protocolVersion.major == 2 ? "ocpp2.0.1" : "ocpp1.6",
+                      protocolVersion.major == 2 ? "ocpp2.0.1" : (protocolVersion.major == 1 ? "ocpp1.6" : "ocpp2.0.1,ocpp1.6"),
                       basic_auth64.empty() ? "" : "\r\nAuthorization: Basic ", 
                       basic_auth64.empty() ? "" : basic_auth64.c_str());     // Create client
 #endif
@@ -480,6 +480,23 @@ void ws_cb(struct mg_connection *nc, int ev, void *ev_data, void *user_data) {
             struct http_message *hm = (struct http_message *) ev_data;
             if (hm->resp_code == 101) {
                 MO_DBG_INFO("connection %s -- connected!", osock->getUrl());
+                struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+                for (int i = 0; i < MG_MAX_HTTP_HEADERS && hm->headers[i].name.len > 0; i++) {
+                    if (mg_vcmp(&hm->headers[i].name, "Sec-WebSocket-Protocol") == 0) {
+                        MO_DBG_INFO("Sec-WebSocket-Protocol: %.*s\n",(int) hm->headers[i].value.len, hm->headers[i].value.ptr);
+                        if(strncmp("ocpp2.0.1",hm->headers[i].value.ptr,(int) hm->headers[i].value.len)){
+                            osock->setMatchedProtocolVersion(&VER_2_0_1);
+                        }else if(strncmp("ocpp1.6",hm->headers[i].value.ptr,(int) hm->headers[i].value.len)){
+                            osock->setMatchedProtocolVersion(&VER_1_6_J);
+                        }else{
+                            MO_DBG_ERR("Not supported protocol version!")osock->updateRcvTimer();
+                            osock->setMatchedProtocolVersion(nullptr);
+                            osock->updateRcvTimer();
+                            return;
+                        }
+                        break;
+                    }
+                }
                 osock->setConnectionOpen(true);
             } else {
                 MO_DBG_WARN("connection %s -- HTTP error %d", osock->getUrl(), hm->resp_code);
@@ -557,6 +574,23 @@ void ws_cb(struct mg_connection *c, int ev, void *ev_data, void *fn_data) {
     } else if (ev == MG_EV_WS_OPEN) {
         // WS connection established. Perform MQTT login
         MO_DBG_INFO("connection %s -- connected!", osock->getUrl());
+        struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+        for (int i = 0; i < MG_MAX_HTTP_HEADERS && hm->headers[i].name.len > 0; i++) {
+            if (mg_vcmp(&hm->headers[i].name, "Sec-WebSocket-Protocol") == 0) {
+                MO_DBG_INFO("Sec-WebSocket-Protocol: %.*s\n",(int) hm->headers[i].value.len, hm->headers[i].value.ptr);
+                if(strncmp("ocpp2.0.1",hm->headers[i].value.ptr,(int) hm->headers[i].value.len)){
+                    osock->setMatchedProtocolVersion(&VER_2_0_1);
+                }else if(strncmp("ocpp1.6",hm->headers[i].value.ptr,(int) hm->headers[i].value.len)){
+                    osock->setMatchedProtocolVersion(&VER_1_6_J);
+                }else{
+                    MO_DBG_ERR("Not supported protocol version!");
+                    osock->setMatchedProtocolVersion(nullptr);
+                    osock->updateRcvTimer();
+                    return;
+                }
+                break;
+            }
+        }
         osock->setConnectionOpen(true);
         osock->updateRcvTimer();
     } else if (ev == MG_EV_WS_MSG) {
